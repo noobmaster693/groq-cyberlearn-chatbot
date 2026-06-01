@@ -112,6 +112,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       gap: 16px;
       padding: 18px 22px;
       background: linear-gradient(135deg, var(--header-start), var(--header-end));
@@ -395,6 +396,54 @@
       outline-offset: -7px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chat-select,
+    .chat-action-btn {
+      min-height: 37px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .chat-select {
+      width: min(235px, 33vw);
+      padding: 7px 9px;
+      cursor: pointer;
+    }
+
+    .chat-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .chat-action-btn:hover,
+    .chat-action-btn:focus-visible,
+    .chat-select:hover,
+    .chat-select:focus-visible {
+      border-color: var(--accent);
+      background: var(--panel-3);
+      outline: none;
+    }
+
+    .chat-action-btn:active { transform: translateY(1px); }
+    .delete-chat-btn:hover,
+    .delete-chat-btn:focus-visible { border-color: var(--danger); }
+
     @media (max-width: 575.98px) {
       .chat-wrapper { padding: 0; }
       .chat-card {
@@ -407,6 +456,9 @@
       .chat-header p { font-size: 12px; }
       .theme-toggle { min-width: auto; padding: 8px 9px; }
       #themeLabel { display: none; }
+      .header-actions { width: 100%; justify-content: flex-start; }
+      .chat-select { flex: 1 1 165px; width: auto; min-width: 0; }
+      .chat-action-label { display: none; }
       .chat-body { padding: 15px; }
       .bubble { max-width: 94%; }
       .chat-footer { padding: 11px; }
@@ -425,10 +477,21 @@
                 <h1>Assistant IA du cours</h1>
                 <p>Pose une question, joins un fichier ou colle une capture d'écran.</p>
               </div>
-              <button id="themeToggle" class="theme-toggle" type="button" aria-label="Passer au thème clair" aria-pressed="false">
-                <span id="themeIcon" aria-hidden="true">☀️</span>
-                <span id="themeLabel">Mode clair</span>
-              </button>
+              <div class="header-actions">
+                <select id="chatSelect" class="chat-select" aria-label="Choisir une conversation"></select>
+                <button id="newChatBtn" class="chat-action-btn" type="button" title="Créer une nouvelle conversation">
+                  <span aria-hidden="true">＋</span>
+                  <span class="chat-action-label">Nouveau chat</span>
+                </button>
+                <button id="deleteChatBtn" class="chat-action-btn delete-chat-btn" type="button" title="Supprimer la conversation actuelle">
+                  <span aria-hidden="true">🗑️</span>
+                  <span class="chat-action-label">Supprimer</span>
+                </button>
+                <button id="themeToggle" class="theme-toggle" type="button" aria-label="Passer au thème clair" aria-pressed="false">
+                  <span id="themeIcon" aria-hidden="true">☀️</span>
+                  <span id="themeLabel">Mode clair</span>
+                </button>
+              </div>
             </header>
 
             <div id="chatBody" class="chat-body">
@@ -486,6 +549,9 @@
     const fileInput = document.getElementById("fileInput");
     const attachmentList = document.getElementById("attachmentList");
     const uploadStatus = document.getElementById("uploadStatus");
+    const chatSelect = document.getElementById("chatSelect");
+    const newChatBtn = document.getElementById("newChatBtn");
+    const deleteChatBtn = document.getElementById("deleteChatBtn");
 
     const MAX_ATTACHMENTS = 5;
     const MAX_IMAGES = 3;
@@ -496,12 +562,207 @@
     const MAX_IMAGE_DATA_URL_CHARS = 1000000;
     const TEXT_EXTENSIONS = new Set(["txt", "md", "csv", "json", "js", "ts", "py", "html", "css", "xml", "ino", "c", "cpp", "h", "java"]);
 
+    const CHAT_STORAGE_KEY = "cyberlearn-chatbot-conversations-v1";
+    const ACTIVE_CHAT_STORAGE_KEY = "cyberlearn-chatbot-active-conversation-v1";
+    const MAX_STORED_CHATS = 25;
+    const MAX_STORED_MESSAGES_PER_CHAT = 60;
+    const WELCOME_MESSAGE = "Bonjour, je suis l'assistant IA de ce cours. Tu peux poser une question, joindre un PDF, un fichier texte ou du code, ou encore coller une capture d'écran avec Ctrl+V.";
+
+    let chats = [];
+    let activeChatId = "";
     let history = [];
     let attachments = [];
 
     function setStatus(message = "", type = "") {
       uploadStatus.textContent = message;
       uploadStatus.className = `upload-status ${type}`.trim();
+    }
+
+    function createChat(title = "Nouveau chat") {
+      const now = Date.now();
+      return {
+        id: crypto.randomUUID(),
+        title,
+        createdAt: now,
+        updatedAt: now,
+        messages: [],
+        history: []
+      };
+    }
+
+    function getActiveChat() {
+      return chats.find((chat) => chat.id === activeChatId) || null;
+    }
+
+    function sanitizeStoredChat(chat) {
+      if (!chat || typeof chat !== "object" || typeof chat.id !== "string") return null;
+
+      const messages = Array.isArray(chat.messages)
+        ? chat.messages
+            .filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string")
+            .slice(-MAX_STORED_MESSAGES_PER_CHAT)
+            .map((item) => ({
+              role: item.role,
+              content: item.content.slice(0, 12000),
+              sentAttachmentNames: Array.isArray(item.sentAttachmentNames)
+                ? item.sentAttachmentNames.map((name) => String(name).slice(0, 120)).slice(0, MAX_ATTACHMENTS)
+                : []
+            }))
+        : [];
+
+      const storedHistory = Array.isArray(chat.history)
+        ? chat.history
+            .filter((item) => item && (item.role === "user" || item.role === "assistant") && typeof item.content === "string")
+            .slice(-16)
+            .map((item) => ({ role: item.role, content: item.content.slice(0, 12000) }))
+        : [];
+
+      return {
+        id: chat.id,
+        title: String(chat.title || "Nouveau chat").slice(0, 48),
+        createdAt: Number(chat.createdAt) || Date.now(),
+        updatedAt: Number(chat.updatedAt) || Date.now(),
+        messages,
+        history: storedHistory
+      };
+    }
+
+    function loadStoredChats() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || "[]");
+        chats = Array.isArray(parsed)
+          ? parsed.map(sanitizeStoredChat).filter(Boolean).slice(0, MAX_STORED_CHATS)
+          : [];
+      } catch {
+        chats = [];
+      }
+
+      if (!chats.length) {
+        chats = [createChat()];
+      }
+
+      const savedActiveId = localStorage.getItem(ACTIVE_CHAT_STORAGE_KEY);
+      activeChatId = chats.some((chat) => chat.id === savedActiveId) ? savedActiveId : chats[0].id;
+      history = getActiveChat()?.history || [];
+      saveChats();
+    }
+
+    function saveChats() {
+      try {
+        chats = chats
+          .map(sanitizeStoredChat)
+          .filter(Boolean)
+          .sort((a, b) => b.updatedAt - a.updatedAt)
+          .slice(0, MAX_STORED_CHATS);
+
+        if (!chats.some((chat) => chat.id === activeChatId)) {
+          activeChatId = chats[0]?.id || "";
+        }
+
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chats));
+        localStorage.setItem(ACTIVE_CHAT_STORAGE_KEY, activeChatId);
+      } catch {
+        setStatus("Impossible d'enregistrer l'historique dans ce navigateur.", "error");
+      }
+    }
+
+    function deriveChatTitle(text) {
+      const cleaned = String(text || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!cleaned) return "Nouveau chat";
+      return cleaned.length > 38 ? `${cleaned.slice(0, 38)}…` : cleaned;
+    }
+
+    function renderChatOptions() {
+      const currentId = activeChatId;
+      chatSelect.innerHTML = "";
+
+      for (const chat of chats) {
+        const option = document.createElement("option");
+        option.value = chat.id;
+        option.textContent = chat.title || "Nouveau chat";
+        option.selected = chat.id === currentId;
+        chatSelect.appendChild(option);
+      }
+    }
+
+    function renderCurrentChat() {
+      const chat = getActiveChat();
+      chatBody.innerHTML = "";
+      addMessage("assistant", WELCOME_MESSAGE, [], false);
+
+      if (chat) {
+        for (const item of chat.messages) {
+          addMessage(item.role, item.content, item.sentAttachmentNames || [], false);
+        }
+        history = Array.isArray(chat.history) ? chat.history.slice(-16) : [];
+      } else {
+        history = [];
+      }
+
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function saveVisibleMessage(role, content, sentAttachmentNames = []) {
+      const chat = getActiveChat();
+      if (!chat) return;
+
+      chat.messages.push({ role, content, sentAttachmentNames });
+      chat.messages = chat.messages.slice(-MAX_STORED_MESSAGES_PER_CHAT);
+      chat.updatedAt = Date.now();
+      saveChats();
+      renderChatOptions();
+    }
+
+    function maybeSetChatTitle(firstMessage) {
+      const chat = getActiveChat();
+      if (!chat || chat.messages.some((item) => item.role === "user")) return;
+      chat.title = deriveChatTitle(firstMessage);
+    }
+
+    function startNewChat() {
+      const chat = createChat();
+      chats.unshift(chat);
+      activeChatId = chat.id;
+      history = [];
+      attachments = [];
+      renderAttachments();
+      setStatus("");
+      saveChats();
+      renderChatOptions();
+      renderCurrentChat();
+      messageInput.focus();
+    }
+
+    function deleteCurrentChat() {
+      const current = getActiveChat();
+      if (!current) return;
+
+      const confirmed = window.confirm(`Supprimer la conversation « ${current.title} » ?`);
+      if (!confirmed) return;
+
+      chats = chats.filter((chat) => chat.id !== current.id);
+      if (!chats.length) chats = [createChat()];
+      activeChatId = chats[0].id;
+      history = getActiveChat()?.history || [];
+      attachments = [];
+      renderAttachments();
+      setStatus("");
+      saveChats();
+      renderChatOptions();
+      renderCurrentChat();
+    }
+
+    function switchChat(chatId) {
+      if (!chats.some((chat) => chat.id === chatId)) return;
+      activeChatId = chatId;
+      history = getActiveChat()?.history || [];
+      attachments = [];
+      renderAttachments();
+      setStatus("");
+      saveChats();
+      renderCurrentChat();
     }
 
     function applyTheme(theme) {
@@ -787,7 +1048,7 @@
       }
     }
 
-    function addMessage(role, content, sentAttachmentNames = []) {
+    function addMessage(role, content, sentAttachmentNames = [], shouldSave = false) {
       const message = document.createElement("div");
       message.className = `message ${role}`;
 
@@ -809,12 +1070,27 @@
       message.appendChild(bubble);
       chatBody.appendChild(message);
       chatBody.scrollTop = chatBody.scrollHeight;
+
+      if (shouldSave) {
+        saveVisibleMessage(role, content, sentAttachmentNames);
+      }
     }
+
+    loadStoredChats();
+    renderChatOptions();
+    renderCurrentChat();
+
+    newChatBtn.addEventListener("click", startNewChat);
+    deleteChatBtn.addEventListener("click", deleteCurrentChat);
+    chatSelect.addEventListener("change", () => switchChat(chatSelect.value));
 
     function setLoading(isLoading) {
       sendBtn.disabled = isLoading;
       messageInput.disabled = isLoading;
       attachBtn.disabled = isLoading;
+      newChatBtn.disabled = isLoading;
+      deleteChatBtn.disabled = isLoading;
+      chatSelect.disabled = isLoading;
       sendBtn.textContent = isLoading ? "..." : "Envoyer";
     }
 
@@ -829,7 +1105,8 @@
 
       const currentAttachments = attachments;
       const visibleMessage = message || "Analyse les fichiers joints.";
-      addMessage("user", visibleMessage, currentAttachments.map((item) => item.name));
+      maybeSetChatTitle(visibleMessage);
+      addMessage("user", visibleMessage, currentAttachments.map((item) => item.name), true);
       messageInput.value = "";
       attachments = [];
       renderAttachments();
@@ -852,12 +1129,20 @@
           throw new Error(data.error || "Erreur inconnue.");
         }
 
-        addMessage("assistant", data.reply);
+        addMessage("assistant", data.reply, [], true);
         history.push({ role: "user", content: visibleMessage });
         history.push({ role: "assistant", content: data.reply });
-        history = history.slice(-8);
+        history = history.slice(-16);
+
+        const chat = getActiveChat();
+        if (chat) {
+          chat.history = history;
+          chat.updatedAt = Date.now();
+          saveChats();
+          renderChatOptions();
+        }
       } catch (error) {
-        addMessage("assistant", `Erreur : ${error.message}`);
+        addMessage("assistant", `Erreur : ${error.message}`, [], false);
       } finally {
         setLoading(false);
         messageInput.focus();
