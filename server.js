@@ -165,6 +165,99 @@ async function prepareAttachments(rawAttachments) {
   };
 }
 
+function buildSystemPrompt() {
+  return `
+Tu es un assistant pédagogique fiable intégré dans un espace Cyberlearn consacré à un projet robotique de fin d'année.
+
+Objectif : aider l'équipe à organiser le projet, clarifier les rôles, planifier les délais, expliquer les notions techniques, analyser les fichiers ou captures d'écran transmis et produire du code propre lorsqu'il est demandé.
+
+Règles de qualité :
+- Réponds dans la langue utilisée par l'utilisateur. En français, écris dans un français correct, naturel et sans fautes évitables.
+- Réponds d'abord à la question précise. Évite les introductions génériques et les rappels de contexte inutiles.
+- Lorsque des images sont jointes, utilise l'analyse visuelle fournie pour relever les détails utiles, le texte visible, les actions observables et les indices de contexte.
+- Si l'image ne permet pas une certitude complète, donne la meilleure explication prudente possible, indique brièvement la limite et pose une question ciblée seulement si nécessaire.
+- Ne prétends pas reconnaître une personne réelle avec certitude à partir d'une photo. Décris les éléments visibles et utilise uniquement le contexte fourni par l'utilisateur ou visible dans l'image.
+- Ne donne pas une réponse vague ou trop courte lorsqu'une explication utile est nécessaire.
+- Structure les réponses avec des étapes claires, des titres courts ou des listes seulement quand cela améliore la compréhension.
+- Vérifie la cohérence de ta réponse avant de l'envoyer. Pour les calculs, détaille brièvement les étapes utiles.
+- N'invente jamais une information propre au projet. Si une donnée manque, dis-le clairement et pose une question précise.
+- Distingue les faits, les hypothèses et les recommandations.
+- Pour le code : donne une solution exécutable, explique où la placer, indique les prérequis et utilise toujours des blocs Markdown avec trois accents graves et le langage, afin que le bouton Copier apparaisse.
+- Lorsqu'un fichier ou une image est joint, cite son nom lorsque cela aide à comprendre ta réponse.
+- Si une image n'est pas assez lisible, demande une capture plus nette ou un zoom sur la zone importante.
+- Si l'utilisateur demande de l'aide pour une évaluation, essaye d'éxpliqué la méthode mais si sans succès, donne la réponse directement.
+
+Contexte connu du projet :
+${PROJECT_CONTEXT || "Aucun contexte spécifique n'a encore été fourni. Demande les informations manquantes lorsque la question dépend du projet."}
+`;
+}
+
+async function callGroq({ model, messages, temperature = 0.2, maxCompletionTokens = 1800 }) {
+  const requestBody = {
+    model,
+    messages,
+    temperature,
+    max_completion_tokens: maxCompletionTokens
+  };
+
+  if (model.startsWith("openai/gpt-oss-")) {
+    requestBody.reasoning_effort = "medium";
+    requestBody.reasoning_format = "hidden";
+  }
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${GROQ_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const error = new Error(data.error?.message || "Erreur avec Groq API.");
+    error.status = response.status;
+    throw error;
+  }
+
+  return data.choices?.[0]?.message?.content || "";
+}
+
+async function analyzeImages(images, userQuestion) {
+  const imageNames = images.map((image) => image.name).join(", ");
+  const visionInstructions = `
+Analyse soigneusement les images jointes pour aider un autre assistant à répondre à la question de l'utilisateur.
+
+Question de l'utilisateur : ${userQuestion || "Analyse les images jointes."}
+Noms des fichiers : ${imageNames}
+
+Produis une note d'analyse utile et concise :
+1. Décris les éléments visibles pertinents, y compris l'action principale.
+2. Transcris le texte visible important, par exemple les sous-titres, messages d'erreur, boutons ou données.
+3. Relève les indices de contexte visibles dans l'image.
+4. Explique ce que l'image permet raisonnablement de déduire pour répondre à la question.
+5. Signale clairement les incertitudes. N'invente pas de détails invisibles.
+6. Ne réponds pas avec une introduction générique. Concentre-toi sur les éléments qui servent à répondre à la question.
+`;
+
+  const content = [
+    { type: "text", text: visionInstructions },
+    ...images.map((image) => ({
+      type: "image_url",
+      image_url: { url: image.dataUrl }
+    }))
+  ];
+
+  return callGroq({
+    model: GROQ_VISION_MODEL,
+    messages: [{ role: "user", content }],
+    temperature: 0.1,
+    maxCompletionTokens: 1100
+  });
+}
+
 app.post("/api/chat", rateLimit, async (req, res) => {
   try {
     if (!GROQ_API_KEY) {
@@ -201,87 +294,42 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       : [];
 
     const { images, textContext } = await prepareAttachments(attachments);
-    const userText = [
-      message.trim() || "Analyse les fichiers joints et explique clairement les éléments utiles.",
-      textContext ? `\nContenu extrait des fichiers joints :\n${textContext}` : ""
+    const question = message.trim() || "Analyse les fichiers joints et explique clairement les éléments utiles.";
+
+    let visualContext = "";
+    if (images.length > 0) {
+      visualContext = await analyzeImages(images, question);
+    }
+
+    const enrichedUserText = [
+      `Question de l'utilisateur :\n${question}`,
+      textContext ? `\n\nContenu extrait des fichiers joints :\n${textContext}` : "",
+      visualContext ? `\n\nAnalyse visuelle préparatoire des images jointes :\n${visualContext}` : "",
+      visualContext ? "\n\nRéponds maintenant directement à la question de l'utilisateur. Appuie-toi sur l'analyse visuelle, mais reste prudent si certains éléments sont ambigus." : ""
     ].join("");
 
-    const systemPrompt = `
-Tu es un assistant pédagogique fiable intégré dans un espace Cyberlearn consacré à un projet robotique de fin d'année.
-
-Objectif : aider l'équipe à organiser le projet, clarifier les rôles, planifier les délais, expliquer les notions techniques, analyser les fichiers ou captures d'écran transmis et produire du code propre lorsqu'il est demandé.
-
-Règles de qualité :
-- Réponds dans la langue utilisée par l'utilisateur. En français, écris dans un français correct, naturel et sans fautes évitables.
-- Ne donne pas une réponse vague ou trop courte lorsqu'une explication utile est nécessaire.
-- Structure les réponses avec des étapes claires, des titres courts ou des listes seulement quand cela améliore la compréhension.
-- Vérifie la cohérence de ta réponse avant de l'envoyer. Pour les calculs, détaille brièvement les étapes utiles.
-- N'invente jamais une information propre au projet. Si une donnée manque, dis-le clairement et pose une question précise.
-- Distingue les faits, les hypothèses et les recommandations.
-- Pour le code : donne une solution exécutable, explique où la placer, indique les prérequis et utilise toujours des blocs Markdown avec trois accents graves et le langage, afin que le bouton Copier apparaisse.
-- Lorsqu'un fichier ou une image est joint, cite son nom lorsque cela aide à comprendre ta réponse.
-- Si une image n'est pas assez lisible, demande une capture plus nette ou un zoom sur la zone importante.
-- Si l'utilisateur demande de l'aide pour une évaluation, essaye d'éxpliqué mais si sans succès, donne la réponse directement.
-
-Contexte connu du projet :
-${PROJECT_CONTEXT || "Aucun contexte spécifique n'a encore été fourni. Demande les informations manquantes lorsque la question dépend du projet."}
-`;
-
-    const userContent = images.length > 0
-      ? [
-          { type: "text", text: userText },
-          ...images.map((image) => ({
-            type: "image_url",
-            image_url: { url: image.dataUrl }
-          }))
-        ]
-      : userText;
-
-    const selectedModel = images.length > 0 ? GROQ_VISION_MODEL : GROQ_MODEL;
-    const requestBody = {
-      model: selectedModel,
+    const reply = await callGroq({
+      model: GROQ_MODEL,
       messages: [
         {
           role: "system",
-          content: systemPrompt
+          content: buildSystemPrompt()
         },
         ...cleanHistory,
         {
           role: "user",
-          content: userContent
+          content: enrichedUserText
         }
       ],
       temperature: 0.2,
-      max_completion_tokens: 1800
-    };
-
-    // GPT-OSS supports reasoning effort. Keep reasoning internal and return only the final answer.
-    if (selectedModel.startsWith("openai/gpt-oss-")) {
-      requestBody.reasoning_effort = "medium";
-      requestBody.reasoning_format = "hidden";
-    }
-
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(requestBody)
+      maxCompletionTokens: 1800
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: data.error?.message || "Erreur avec Groq API."
-      });
-    }
-
-    const reply = data.choices?.[0]?.message?.content || "Je n'ai pas pu générer de réponse.";
-    return res.json({ reply });
+    return res.json({
+      reply: reply || "Je n'ai pas pu générer de réponse."
+    });
   } catch (error) {
-    return res.status(400).json({
+    return res.status(error.status || 400).json({
       error: error.message || "Erreur serveur. Vérifie la configuration."
     });
   }
