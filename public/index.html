@@ -483,6 +483,10 @@
                   <span aria-hidden="true">＋</span>
                   <span class="chat-action-label">Nouveau chat</span>
                 </button>
+                <button id="renameChatBtn" class="chat-action-btn" type="button" title="Renommer la conversation actuelle">
+                  <span aria-hidden="true">✏️</span>
+                  <span class="chat-action-label">Renommer</span>
+                </button>
                 <button id="deleteChatBtn" class="chat-action-btn delete-chat-btn" type="button" title="Supprimer la conversation actuelle">
                   <span aria-hidden="true">🗑️</span>
                   <span class="chat-action-label">Supprimer</span>
@@ -551,6 +555,7 @@
     const uploadStatus = document.getElementById("uploadStatus");
     const chatSelect = document.getElementById("chatSelect");
     const newChatBtn = document.getElementById("newChatBtn");
+    const renameChatBtn = document.getElementById("renameChatBtn");
     const deleteChatBtn = document.getElementById("deleteChatBtn");
 
     const MAX_ATTACHMENTS = 5;
@@ -733,6 +738,30 @@
       renderChatOptions();
       renderCurrentChat();
       messageInput.focus();
+    }
+
+    function renameCurrentChat() {
+      const current = getActiveChat();
+      if (!current) return;
+
+      const requestedTitle = window.prompt("Nouveau nom de la conversation :", current.title || "Nouveau chat");
+      if (requestedTitle === null) return;
+
+      const cleanedTitle = String(requestedTitle)
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 48);
+
+      if (!cleanedTitle) {
+        setStatus("Le nom de la conversation ne peut pas être vide.", "error");
+        return;
+      }
+
+      current.title = cleanedTitle;
+      current.updatedAt = Date.now();
+      saveChats();
+      renderChatOptions();
+      setStatus("Conversation renommée.", "success");
     }
 
     function deleteCurrentChat() {
@@ -1081,6 +1110,7 @@
     renderCurrentChat();
 
     newChatBtn.addEventListener("click", startNewChat);
+    renameChatBtn.addEventListener("click", renameCurrentChat);
     deleteChatBtn.addEventListener("click", deleteCurrentChat);
     chatSelect.addEventListener("change", () => switchChat(chatSelect.value));
 
@@ -1089,6 +1119,7 @@
       messageInput.disabled = isLoading;
       attachBtn.disabled = isLoading;
       newChatBtn.disabled = isLoading;
+      renameChatBtn.disabled = isLoading;
       deleteChatBtn.disabled = isLoading;
       chatSelect.disabled = isLoading;
       sendBtn.textContent = isLoading ? "..." : "Envoyer";
