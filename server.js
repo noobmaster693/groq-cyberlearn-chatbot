@@ -174,8 +174,12 @@ Objectif : aider l'équipe à organiser le projet, clarifier les rôles, planifi
 Règles de qualité :
 - Réponds dans la langue utilisée par l'utilisateur. En français, écris dans un français correct, naturel et sans fautes évitables.
 - Réponds d'abord à la question précise. Évite les introductions génériques et les rappels de contexte inutiles.
+- Pour une question directe sur une capture d'écran, commence par la meilleure réponse probable en quelques phrases. Ne fournis pas un catalogue de possibilités génériques.
+- Lorsque la question contient un mot vague comme « ceci », « ça » ou « this », indique brièvement l'action visible que tu penses que l'utilisateur désigne. Si l'action reste réellement ambiguë, donne ta meilleure interprétation prudente puis pose une seule question ciblée.
 - Lorsque des images sont jointes, utilise l'analyse visuelle fournie pour relever les détails utiles, le texte visible, les actions observables et les indices de contexte.
-- Si l'image ne permet pas une certitude complète, donne la meilleure explication prudente possible, indique brièvement la limite et pose une question ciblée seulement si nécessaire.
+- Si l'image ne permet pas une certitude complète, indique brièvement la limite sans transformer la réponse en longue liste d'hypothèses.
+- N'invente pas de numéro d'épisode, de citation, de nom, d'action ou de détail narratif qui n'est pas suffisamment appuyé par l'image, l'historique ou la question.
+- N'utilise pas de tableau Markdown pour une réponse narrative ou une question simple. Utilise un tableau seulement si l'utilisateur demande une comparaison ou si cela améliore clairement une tâche structurée.
 - Ne prétends pas reconnaître une personne réelle avec certitude à partir d'une photo. Décris les éléments visibles et utilise uniquement le contexte fourni par l'utilisateur ou visible dans l'image.
 - Ne donne pas une réponse vague ou trop courte lorsqu'une explication utile est nécessaire.
 - Structure les réponses avec des étapes claires, des titres courts ou des listes seulement quand cela améliore la compréhension.
@@ -234,12 +238,14 @@ Question de l'utilisateur : ${userQuestion || "Analyse les images jointes."}
 Noms des fichiers : ${imageNames}
 
 Produis une note d'analyse utile et concise :
-1. Décris les éléments visibles pertinents, y compris l'action principale.
-2. Transcris le texte visible important, par exemple les sous-titres, messages d'erreur, boutons ou données.
-3. Relève les indices de contexte visibles dans l'image.
-4. Explique ce que l'image permet raisonnablement de déduire pour répondre à la question.
-5. Signale clairement les incertitudes. N'invente pas de détails invisibles.
-6. Ne réponds pas avec une introduction générique. Concentre-toi sur les éléments qui servent à répondre à la question.
+1. Décris les éléments visibles pertinents et identifie l'action principale la plus probable.
+2. Si la question contient « ceci », « ça » ou « this », précise quelle action visible semble être visée.
+3. Transcris le texte visible important, par exemple les sous-titres, messages d'erreur, boutons ou données.
+4. Relève les indices de contexte visibles dans l'image.
+5. Explique ce que l'image permet raisonnablement de déduire pour répondre à la question.
+6. Signale clairement les incertitudes. N'invente pas de détails invisibles, de numéro d'épisode ou de contexte narratif non visible.
+7. Pour une capture issue d'une fiction ou d'une vidéo, ne rédige pas un résumé générique de l'œuvre. Concentre-toi sur la scène affichée.
+8. Ne prétends pas identifier un personnage uniquement à partir de son apparence. Utilise les noms seulement s'ils sont fournis par l'utilisateur ou visibles dans l'image.
 `;
 
   const content = [
@@ -305,7 +311,7 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       `Question de l'utilisateur :\n${question}`,
       textContext ? `\n\nContenu extrait des fichiers joints :\n${textContext}` : "",
       visualContext ? `\n\nAnalyse visuelle préparatoire des images jointes :\n${visualContext}` : "",
-      visualContext ? "\n\nRéponds maintenant directement à la question de l'utilisateur. Appuie-toi sur l'analyse visuelle, mais reste prudent si certains éléments sont ambigus." : ""
+      visualContext ? "\n\nRéponds maintenant directement à la question de l'utilisateur. Appuie-toi sur l'analyse visuelle. Pour une question simple du type pourquoi/what/why, réponds en prose concise : donne d'abord la meilleure interprétation de l'action visible et son explication. N'utilise pas de tableau et n'énumère pas une liste de motifs génériques. Si le référent exact reste ambigu, ajoute seulement une question de clarification courte à la fin." : ""
     ].join("");
 
     const reply = await callGroq({
