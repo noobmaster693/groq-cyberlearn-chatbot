@@ -16,6 +16,8 @@
       --muted: #b8b8c2;
       --accent: #3b82f6;
       --accent-dark: #2563eb;
+      --danger: #ef4444;
+      --success: #22c55e;
       --code-bg: #000000;
       --code-text: #f8fafc;
       --code-header: #18181b;
@@ -54,9 +56,7 @@
       --gradient-teal: rgba(13, 148, 136, 0.08);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html,
     body {
@@ -69,13 +69,11 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color-scheme: dark;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    body.light-mode {
-      color-scheme: light;
-    }
+    body.light-mode { color-scheme: light; }
 
     .chat-wrapper {
       height: 100vh;
@@ -115,24 +113,33 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
+      padding: 18px 22px;
       background: linear-gradient(135deg, var(--header-start), var(--header-end));
-      color: var(--text);
-      padding: 20px 24px;
       border-bottom: 1px solid var(--border);
+      color: var(--text);
     }
 
-    .chat-header-copy {
-      min-width: 0;
+    .chat-header-copy { min-width: 0; }
+
+    .chat-header h1 {
+      margin: 0 0 4px;
+      font-size: 21px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
     }
 
-    .theme-toggle {
-      flex: 0 0 auto;
+    .chat-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .theme-toggle,
+    .attach-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 7px;
-      min-width: 118px;
-      padding: 8px 11px;
       border: 1px solid var(--border);
       border-radius: 9px;
       background: var(--panel-2);
@@ -143,54 +150,48 @@
       transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
     }
 
+    .theme-toggle {
+      flex: 0 0 auto;
+      min-width: 118px;
+      padding: 8px 11px;
+    }
+
+    .attach-btn { padding: 8px 11px; }
+
     .theme-toggle:hover,
-    .theme-toggle:focus-visible {
+    .theme-toggle:focus-visible,
+    .attach-btn:hover,
+    .attach-btn:focus-visible {
       background: var(--panel-3);
       border-color: var(--accent);
     }
 
-    .theme-toggle:active {
-      transform: translateY(1px);
-    }
-
-    .chat-header h1 {
-      font-size: 22px;
-      font-weight: 750;
-      margin: 0 0 4px;
-      letter-spacing: -0.02em;
-    }
-
-    .chat-header p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
+    .theme-toggle:active,
+    .attach-btn:active { transform: translateY(1px); }
 
     .chat-body {
       flex: 1 1 auto;
       min-height: 0;
       overflow-y: auto;
-      padding: 24px;
+      padding: 22px;
       background: var(--bg);
       scrollbar-color: #3f3f46 transparent;
     }
 
     .message {
       display: flex;
-      margin-bottom: 16px;
+      margin-bottom: 15px;
     }
 
-    .message.user {
-      justify-content: flex-end;
-    }
+    .message.user { justify-content: flex-end; }
 
     .bubble {
       max-width: 86%;
-      padding: 13px 15px;
+      padding: 12px 14px;
       border-radius: 12px;
+      color: var(--text);
       font-size: 15px;
       line-height: 1.6;
-      color: var(--text);
       overflow-wrap: anywhere;
     }
 
@@ -206,12 +207,13 @@
       border-bottom-left-radius: 4px;
     }
 
-    .message-text {
-      white-space: pre-wrap;
-    }
+    .message-text { white-space: pre-wrap; }
+    .message-text:not(:last-child) { margin-bottom: 12px; }
 
-    .message-text:not(:last-child) {
-      margin-bottom: 12px;
+    .sent-files {
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.9;
     }
 
     .code-block {
@@ -241,15 +243,14 @@
     }
 
     .copy-code-btn {
+      padding: 5px 9px;
       border: 1px solid var(--copy-border);
+      border-radius: 7px;
       background: var(--copy-bg);
       color: #fff;
-      border-radius: 7px;
-      padding: 5px 9px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
     }
 
     .copy-code-btn:hover,
@@ -275,22 +276,90 @@
 
     .chat-footer {
       flex: 0 0 auto;
-      padding: 18px;
+      padding: 14px 16px;
       border-top: 1px solid var(--border);
       background: var(--panel);
     }
 
+    .attachment-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+
+    .attachment-help {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .attachment-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+
+    .attachment-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      max-width: min(100%, 370px);
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .attachment-thumb {
+      width: 30px;
+      height: 30px;
+      border-radius: 5px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    .attachment-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .remove-attachment {
+      flex: 0 0 auto;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .remove-attachment:hover { color: var(--danger); }
+
+    .upload-status {
+      min-height: 18px;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .upload-status.error { color: var(--danger); }
+    .upload-status.success { color: var(--success); }
+
     .form-control {
       background: var(--panel-3);
       color: var(--text);
-      border-radius: 8px;
       border-color: var(--border);
+      border-radius: 8px;
       box-shadow: none;
     }
 
-    .form-control::placeholder {
-      color: #8b8b96;
-    }
+    .form-control::placeholder { color: #8b8b96; }
 
     .form-control:focus {
       background: var(--panel-3);
@@ -300,13 +369,13 @@
     }
 
     .btn-send {
-      background: var(--accent);
-      color: #fff;
-      border-radius: 8px;
       padding-left: 22px;
       padding-right: 22px;
-      font-weight: 700;
       border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
     }
 
     .btn-send:hover,
@@ -316,59 +385,37 @@
     }
 
     .small-note {
+      margin-top: 8px;
       color: var(--muted);
-      font-size: 13px;
-      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .drag-active .chat-card {
+      outline: 3px dashed var(--accent);
+      outline-offset: -7px;
     }
 
     @media (max-width: 575.98px) {
-      .chat-wrapper {
-        padding: 0;
-      }
-
-      .container {
-        padding: 0;
-      }
-
+      .chat-wrapper { padding: 0; }
       .chat-card {
-        border-radius: 0;
-        border-left: 0;
         border-right: 0;
+        border-left: 0;
+        border-radius: 0;
       }
-
-      .chat-body {
-        padding: 18px;
-      }
-
-      .bubble {
-        max-width: 94%;
-      }
-
-      .chat-header {
-        padding: 16px;
-      }
-
-      .chat-header h1 {
-        font-size: 18px;
-      }
-
-      .chat-header p {
-        font-size: 12px;
-      }
-
-      .theme-toggle {
-        min-width: auto;
-        padding: 8px 9px;
-      }
-
-      #themeLabel {
-        display: none;
-      }
+      .chat-header { padding: 14px; }
+      .chat-header h1 { font-size: 18px; }
+      .chat-header p { font-size: 12px; }
+      .theme-toggle { min-width: auto; padding: 8px 9px; }
+      #themeLabel { display: none; }
+      .chat-body { padding: 15px; }
+      .bubble { max-width: 94%; }
+      .chat-footer { padding: 11px; }
+      .attachment-help { display: block; width: 100%; }
     }
   </style>
 </head>
 <body>
-  <main class="chat-wrapper">
+  <main id="chatWrapper" class="chat-wrapper">
     <div class="container-fluid h-100 p-0">
       <div class="row g-0 h-100">
         <div class="col-12 h-100 chat-column">
@@ -376,7 +423,7 @@
             <header class="chat-header">
               <div class="chat-header-copy">
                 <h1>Assistant IA du cours</h1>
-                <p>Pose une question sur le cours et reçois une explication claire.</p>
+                <p>Pose une question, joins un fichier ou colle une capture d'écran.</p>
               </div>
               <button id="themeToggle" class="theme-toggle" type="button" aria-label="Passer au thème clair" aria-pressed="false">
                 <span id="themeIcon" aria-hidden="true">☀️</span>
@@ -387,13 +434,26 @@
             <div id="chatBody" class="chat-body">
               <div class="message assistant">
                 <div class="bubble">
-                  <div class="message-text">Bonjour, je suis l'assistant IA de ce cours. Pose-moi une question sur un concept, une activité ou une leçon.</div>
+                  <div class="message-text">Bonjour, je suis l'assistant IA de ce cours. Tu peux poser une question, joindre un PDF, un fichier texte ou du code, ou encore coller une capture d'écran avec Ctrl+V.</div>
                 </div>
               </div>
             </div>
 
             <footer class="chat-footer">
               <form id="chatForm">
+                <div class="attachment-bar">
+                  <button id="attachBtn" class="attach-btn" type="button">📎 Ajouter un fichier</button>
+                  <input
+                    id="fileInput"
+                    type="file"
+                    multiple
+                    hidden
+                    accept="image/png,image/jpeg,image/webp,application/pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.ino,.c,.cpp,.h,.java"
+                  >
+                  <span class="attachment-help">PDF, texte, code, image · maximum 5 fichiers · colle aussi une capture avec Ctrl+V</span>
+                </div>
+                <div id="attachmentList" class="attachment-list" aria-live="polite"></div>
+                <div id="uploadStatus" class="upload-status" aria-live="polite"></div>
                 <div class="input-group">
                   <input
                     id="messageInput"
@@ -401,15 +461,10 @@
                     class="form-control"
                     placeholder="Écris ta question ici..."
                     autocomplete="off"
-                    required
                   >
-                  <button id="sendBtn" class="btn btn-send" type="submit">
-                    Envoyer
-                  </button>
+                  <button id="sendBtn" class="btn btn-send" type="submit">Envoyer</button>
                 </div>
-                <div class="small-note">
-                  L'assistant aide à comprendre le cours, mais ne remplace pas les consignes de l'enseignant.
-                </div>
+                <div class="small-note">Les fichiers sont envoyés uniquement pour analyser ta demande. Évite d'ajouter des informations personnelles ou confidentielles.</div>
               </form>
             </footer>
           </section>
@@ -420,14 +475,34 @@
 
   <script>
     const chatForm = document.getElementById("chatForm");
+    const chatWrapper = document.getElementById("chatWrapper");
     const chatBody = document.getElementById("chatBody");
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
     const themeToggle = document.getElementById("themeToggle");
     const themeIcon = document.getElementById("themeIcon");
     const themeLabel = document.getElementById("themeLabel");
+    const attachBtn = document.getElementById("attachBtn");
+    const fileInput = document.getElementById("fileInput");
+    const attachmentList = document.getElementById("attachmentList");
+    const uploadStatus = document.getElementById("uploadStatus");
+
+    const MAX_ATTACHMENTS = 5;
+    const MAX_IMAGES = 3;
+    const MAX_TEXT_CHARS = 12000;
+    const MAX_PDF_BYTES = 3 * 1024 * 1024;
+    const MAX_TEXT_FILE_BYTES = 600 * 1024;
+    const MAX_IMAGE_FILE_BYTES = 12 * 1024 * 1024;
+    const MAX_IMAGE_DATA_URL_CHARS = 1000000;
+    const TEXT_EXTENSIONS = new Set(["txt", "md", "csv", "json", "js", "ts", "py", "html", "css", "xml", "ino", "c", "cpp", "h", "java"]);
 
     let history = [];
+    let attachments = [];
+
+    function setStatus(message = "", type = "") {
+      uploadStatus.textContent = message;
+      uploadStatus.className = `upload-status ${type}`.trim();
+    }
 
     function applyTheme(theme) {
       const isLight = theme === "light";
@@ -446,6 +521,203 @@
       const nextTheme = document.body.classList.contains("light-mode") ? "dark" : "light";
       applyTheme(nextTheme);
     });
+
+    function fileExtension(name) {
+      const parts = String(name || "").split(".");
+      return parts.length > 1 ? parts.pop().toLowerCase() : "";
+    }
+
+    function readAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error(`Impossible de lire ${file.name}.`));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        image.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve(image);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error(`Impossible de lire l'image ${file.name}.`));
+        };
+        image.src = objectUrl;
+      });
+    }
+
+    async function compressImage(file) {
+      if (file.size > MAX_IMAGE_FILE_BYTES) {
+        throw new Error(`${file.name} est trop volumineux.`);
+      }
+
+      const image = await loadImage(file);
+      const maxDimension = 1600;
+      const ratio = Math.min(1, maxDimension / Math.max(image.width, image.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.width * ratio));
+      canvas.height = Math.max(1, Math.round(image.height * ratio));
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      let quality = 0.9;
+      let dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+      while (dataUrl.length > MAX_IMAGE_DATA_URL_CHARS && quality > 0.45) {
+        quality -= 0.1;
+        dataUrl = canvas.toDataURL("image/jpeg", quality);
+      }
+
+      if (dataUrl.length > MAX_IMAGE_DATA_URL_CHARS) {
+        throw new Error(`${file.name} reste trop volumineux après compression.`);
+      }
+
+      return {
+        id: crypto.randomUUID(),
+        kind: "image",
+        name: file.name || "capture-ecran.jpg",
+        mimeType: "image/jpeg",
+        dataUrl,
+        previewUrl: dataUrl
+      };
+    }
+
+    async function prepareFile(file) {
+      const extension = fileExtension(file.name);
+
+      if (file.type.startsWith("image/")) {
+        const imageCount = attachments.filter((item) => item.kind === "image").length;
+        if (imageCount >= MAX_IMAGES) {
+          throw new Error(`Tu peux joindre au maximum ${MAX_IMAGES} images à la fois.`);
+        }
+        return compressImage(file);
+      }
+
+      if (file.type === "application/pdf" || extension === "pdf") {
+        if (file.size > MAX_PDF_BYTES) {
+          throw new Error(`${file.name} dépasse la limite de 3 Mo.`);
+        }
+        return {
+          id: crypto.randomUUID(),
+          kind: "pdf",
+          name: file.name,
+          mimeType: "application/pdf",
+          dataUrl: await readAsDataUrl(file)
+        };
+      }
+
+      if (TEXT_EXTENSIONS.has(extension) || file.type.startsWith("text/")) {
+        if (file.size > MAX_TEXT_FILE_BYTES) {
+          throw new Error(`${file.name} est trop volumineux.`);
+        }
+        return {
+          id: crypto.randomUUID(),
+          kind: "text",
+          name: file.name,
+          mimeType: file.type || "text/plain",
+          text: (await file.text()).slice(0, MAX_TEXT_CHARS)
+        };
+      }
+
+      throw new Error(`Format non pris en charge : ${file.name}.`);
+    }
+
+    async function addFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      setStatus("Préparation des fichiers...");
+
+      for (const file of files) {
+        if (attachments.length >= MAX_ATTACHMENTS) {
+          setStatus(`Tu peux joindre au maximum ${MAX_ATTACHMENTS} fichiers.`, "error");
+          break;
+        }
+
+        try {
+          const prepared = await prepareFile(file);
+          attachments.push(prepared);
+          renderAttachments();
+          setStatus("Fichier ajouté.", "success");
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      }
+
+      fileInput.value = "";
+    }
+
+    function renderAttachments() {
+      attachmentList.innerHTML = "";
+
+      for (const item of attachments) {
+        const chip = document.createElement("div");
+        chip.className = "attachment-chip";
+
+        if (item.kind === "image") {
+          const image = document.createElement("img");
+          image.className = "attachment-thumb";
+          image.src = item.previewUrl;
+          image.alt = "Aperçu";
+          chip.appendChild(image);
+        } else {
+          const icon = document.createElement("span");
+          icon.textContent = item.kind === "pdf" ? "📄" : "📝";
+          chip.appendChild(icon);
+        }
+
+        const name = document.createElement("span");
+        name.className = "attachment-name";
+        name.textContent = item.name;
+        chip.appendChild(name);
+
+        const removeButton = document.createElement("button");
+        removeButton.className = "remove-attachment";
+        removeButton.type = "button";
+        removeButton.textContent = "×";
+        removeButton.setAttribute("aria-label", `Supprimer ${item.name}`);
+        removeButton.addEventListener("click", () => {
+          attachments = attachments.filter((attachment) => attachment.id !== item.id);
+          renderAttachments();
+          setStatus(attachments.length ? "" : "Tous les fichiers ont été retirés.");
+        });
+        chip.appendChild(removeButton);
+
+        attachmentList.appendChild(chip);
+      }
+    }
+
+    attachBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => addFiles(fileInput.files));
+
+    window.addEventListener("paste", (event) => {
+      const imageFiles = Array.from(event.clipboardData?.files || []).filter((file) => file.type.startsWith("image/"));
+      if (!imageFiles.length) return;
+      event.preventDefault();
+      addFiles(imageFiles);
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      window.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        chatWrapper.classList.add("drag-active");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      window.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        chatWrapper.classList.remove("drag-active");
+      });
+    });
+
+    window.addEventListener("drop", (event) => addFiles(event.dataTransfer?.files));
 
     function createTextPart(text) {
       const textPart = document.createElement("div");
@@ -469,30 +741,23 @@
       copyButton.className = "copy-code-btn";
       copyButton.type = "button";
       copyButton.textContent = "Copier";
-
       copyButton.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(code);
           copyButton.textContent = "Copié";
-          setTimeout(() => {
-            copyButton.textContent = "Copier";
-          }, 1400);
-        } catch (error) {
+        } catch {
           copyButton.textContent = "Erreur";
-          setTimeout(() => {
-            copyButton.textContent = "Copier";
-          }, 1400);
         }
+        setTimeout(() => { copyButton.textContent = "Copier"; }, 1400);
       });
 
       toolbar.appendChild(label);
       toolbar.appendChild(copyButton);
 
       const pre = document.createElement("pre");
-      const codeEl = document.createElement("code");
-      codeEl.textContent = code;
-      pre.appendChild(codeEl);
-
+      const codeElement = document.createElement("code");
+      codeElement.textContent = code;
+      pre.appendChild(codeElement);
       wrapper.appendChild(toolbar);
       wrapper.appendChild(pre);
       return wrapper;
@@ -506,15 +771,12 @@
 
       while ((match = regex.exec(content)) !== null) {
         const textBefore = content.slice(lastIndex, match.index);
-
         if (textBefore.trim()) {
           bubble.appendChild(createTextPart(textBefore));
           hasContent = true;
         }
 
-        const language = match[1].trim();
-        const code = match[2].replace(/^\n/, "").replace(/\n$/, "");
-        bubble.appendChild(createCodeBlock(language, code));
+        bubble.appendChild(createCodeBlock(match[1].trim(), match[2].replace(/^\n/, "").replace(/\n$/, "")));
         hasContent = true;
         lastIndex = regex.lastIndex;
       }
@@ -525,7 +787,7 @@
       }
     }
 
-    function addMessage(role, content) {
+    function addMessage(role, content, sentAttachmentNames = []) {
       const message = document.createElement("div");
       message.className = `message ${role}`;
 
@@ -536,6 +798,12 @@
         renderMessageContent(bubble, content);
       } else {
         bubble.appendChild(createTextPart(content));
+        if (sentAttachmentNames.length) {
+          const files = document.createElement("div");
+          files.className = "sent-files";
+          files.textContent = `📎 ${sentAttachmentNames.join(", ")}`;
+          bubble.appendChild(files);
+        }
       }
 
       message.appendChild(bubble);
@@ -546,47 +814,50 @@
     function setLoading(isLoading) {
       sendBtn.disabled = isLoading;
       messageInput.disabled = isLoading;
+      attachBtn.disabled = isLoading;
       sendBtn.textContent = isLoading ? "..." : "Envoyer";
     }
 
-    chatForm.addEventListener("submit", async function (event) {
+    chatForm.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       const message = messageInput.value.trim();
-
-      if (!message) {
+      if (!message && attachments.length === 0) {
+        setStatus("Ajoute une question ou un fichier.", "error");
         return;
       }
 
-      addMessage("user", message);
+      const currentAttachments = attachments;
+      const visibleMessage = message || "Analyse les fichiers joints.";
+      addMessage("user", visibleMessage, currentAttachments.map((item) => item.name));
       messageInput.value = "";
+      attachments = [];
+      renderAttachments();
+      setStatus("");
       setLoading(true);
 
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message,
-            history
+            history,
+            attachments: currentAttachments.map(({ previewUrl, id, ...item }) => item)
           })
         });
 
         const data = await response.json();
-
         if (!response.ok) {
           throw new Error(data.error || "Erreur inconnue.");
         }
 
         addMessage("assistant", data.reply);
-
-        history.push({ role: "user", content: message });
+        history.push({ role: "user", content: visibleMessage });
         history.push({ role: "assistant", content: data.reply });
         history = history.slice(-8);
       } catch (error) {
-        addMessage("assistant", "Erreur : " + error.message);
+        addMessage("assistant", `Erreur : ${error.message}`);
       } finally {
         setLoading(false);
         messageInput.focus();
