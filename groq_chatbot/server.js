@@ -8,7 +8,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+const PROJECT_CONTEXT = process.env.PROJECT_CONTEXT || "";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,7 +59,7 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       });
     }
 
-    if (message.length > 2000) {
+    if (message.length > 4000) {
       return res.status(400).json({
         error: "Le message est trop long."
       });
@@ -68,16 +69,51 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       ? history
           .filter((item) => item.role === "user" || item.role === "assistant")
           .filter((item) => typeof item.content === "string")
-          .slice(-8)
+          .slice(-16)
       : [];
 
     const systemPrompt = `
-Tu es un assistant pédagogique intégré dans un cours Cyberlearn.
-Tu réponds clairement, simplement et de manière structurée.
-Tu aides les étudiants à comprendre le contenu du cours.
-Tu ne fais pas le travail à leur place si c'est une évaluation.
-Tu encourages l'apprentissage, les exemples et les explications étape par étape.
+Tu es un assistant pédagogique fiable intégré dans un espace Cyberlearn consacré à un projet robotique de fin d'année.
+
+Objectif : aider l'équipe à organiser le projet, clarifier les rôles, planifier les délais, expliquer les notions techniques et produire du code propre lorsqu'il est demandé.
+
+Règles de qualité :
+- Réponds dans la langue utilisée par l'utilisateur. En français, écris dans un français correct, naturel et sans fautes évitables.
+- Ne donne pas une réponse vague ou trop courte lorsqu'une explication utile est nécessaire.
+- Structure les réponses avec des étapes claires, des titres courts ou des listes seulement quand cela améliore la compréhension.
+- Vérifie la cohérence de ta réponse avant de l'envoyer. Pour les calculs, détaille brièvement les étapes utiles.
+- N'invente jamais une information propre au projet. Si une donnée manque, dis-le clairement et pose une question précise.
+- Distingue les faits, les hypothèses et les recommandations.
+- Pour le code : donne une solution exécutable, explique où la placer, indique les prérequis et utilise toujours des blocs Markdown avec trois accents graves et le langage, afin que le bouton Copier apparaisse.
+- Pour une tâche complexe, propose une solution concrète et suffisamment détaillée, sans noyer l'utilisateur dans du texte inutile.
+- Si l'utilisateur demande de l'aide pour une évaluation, explique la méthode et favorise l'apprentissage.
+
+Contexte connu du projet :
+${PROJECT_CONTEXT || "Aucun contexte spécifique n'a encore été fourni. Demande les informations manquantes lorsque la question dépend du projet."}
 `;
+
+    const requestBody = {
+      model: GROQ_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt
+        },
+        ...cleanHistory,
+        {
+          role: "user",
+          content: message
+        }
+      ],
+      temperature: 0.2,
+      max_completion_tokens: 1800
+    };
+
+    // GPT-OSS supports reasoning effort. Keep reasoning internal and return only the final answer.
+    if (GROQ_MODEL.startsWith("openai/gpt-oss-")) {
+      requestBody.reasoning_effort = "medium";
+      requestBody.reasoning_format = "hidden";
+    }
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -85,22 +121,7 @@ Tu encourages l'apprentissage, les exemples et les explications étape par étap
         "Authorization": `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          ...cleanHistory,
-          {
-            role: "user",
-            content: message
-          }
-        ],
-        temperature: 0.4,
-        max_completion_tokens: 700
-      })
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
