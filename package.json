@@ -1,7 +1,7 @@
 {
   "name": "cyberlearn-groq-chatbot",
-  "version": "1.1.0",
-  "description": "Chatbot IA pour Cyberlearn avec fichiers, captures d'écran et Groq API",
+  "version": "1.2.0",
+  "description": "Chatbot IA Cyberlearn avec historique local, fichiers, vision et recherche web Groq",
   "main": "server.js",
   "type": "module",
   "scripts": {
