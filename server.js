@@ -12,6 +12,8 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct";
 const PROJECT_CONTEXT = process.env.PROJECT_CONTEXT || "";
+const ENABLE_BROWSER_SEARCH = process.env.ENABLE_BROWSER_SEARCH !== "false";
+const MAX_WEB_RESEARCH_CHARS = 14_000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -177,6 +179,8 @@ Règles de qualité :
 - Pour une question directe sur une capture d'écran, commence par la meilleure réponse probable en quelques phrases. Ne fournis pas un catalogue de possibilités génériques.
 - Lorsque la question contient un mot vague comme « ceci », « ça » ou « this », indique brièvement l'action visible que tu penses que l'utilisateur désigne. Si l'action reste réellement ambiguë, donne ta meilleure interprétation prudente puis pose une seule question ciblée.
 - Lorsque des images sont jointes, utilise l'analyse visuelle fournie pour relever les détails utiles, le texte visible, les actions observables et les indices de contexte.
+- Lorsqu'une note de recherche web est fournie, utilise-la pour vérifier le contexte et appuyer les faits. Ne recopie pas les extraits bruts de navigation.
+- Pour une question sur une scène de fiction, une vidéo ou une capture provenant du web, privilégie une explication directe fondée sur les indices visuels et les sources trouvées. Évite les tableaux et les catalogues de possibilités génériques.
 - Si l'image ne permet pas une certitude complète, indique brièvement la limite sans transformer la réponse en longue liste d'hypothèses.
 - N'invente pas de numéro d'épisode, de citation, de nom, d'action ou de détail narratif qui n'est pas suffisamment appuyé par l'image, l'historique ou la question.
 - N'utilise pas de tableau Markdown pour une réponse narrative ou une question simple. Utilise un tableau seulement si l'utilisateur demande une comparaison ou si cela améliore clairement une tâche structurée.
@@ -196,7 +200,13 @@ ${PROJECT_CONTEXT || "Aucun contexte spécifique n'a encore été fourni. Demand
 `;
 }
 
-async function callGroq({ model, messages, temperature = 0.2, maxCompletionTokens = 1800 }) {
+async function callGroq({
+  model,
+  messages,
+  temperature = 0.2,
+  maxCompletionTokens = 1800,
+  browserSearch = false
+}) {
   const requestBody = {
     model,
     messages,
@@ -205,8 +215,18 @@ async function callGroq({ model, messages, temperature = 0.2, maxCompletionToken
   };
 
   if (model.startsWith("openai/gpt-oss-")) {
-    requestBody.reasoning_effort = "medium";
-    requestBody.reasoning_format = "hidden";
+    requestBody.reasoning_effort = browserSearch ? "low" : "medium";
+
+    // Keep regular reasoning internal. Browser search results are used as an
+    // intermediate research note and are cleaned by the final answer step.
+    if (!browserSearch) {
+      requestBody.reasoning_format = "hidden";
+    }
+  }
+
+  if (browserSearch) {
+    requestBody.tools = [{ type: "browser_search" }];
+    requestBody.tool_choice = "required";
   }
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -264,6 +284,52 @@ Produis une note d'analyse utile et concise :
   });
 }
 
+
+function shouldUseBrowserSearch(question, images) {
+  if (!ENABLE_BROWSER_SEARCH) {
+    return false;
+  }
+
+  // Image questions often need external context: exact error messages,
+  // documentation, product pages, or the surrounding context of a video scene.
+  if (images.length > 0) {
+    return true;
+  }
+
+  return /\b(search|look up|browse|online|web|internet|latest|recent|current|source|sources|verify|check online|find out|recherche|chercher|internet|en ligne|récent|actuel|actualité|source|sources|vérifie|vérifier)\b/i.test(question);
+}
+
+async function researchOnline(question, visualContext) {
+  const researchPrompt = `
+Use browser search to prepare a concise, source-grounded research memo for another assistant.
+
+User question:
+${question}
+
+Preliminary visual analysis:
+${visualContext || "No image was attached."}
+
+Instructions:
+- Search for the most likely context needed to answer the user's actual question.
+- When the question concerns a screenshot from a film, TV series, video, website, application, or error screen, use the visible clues, captions, text, and likely title to look for the exact context online.
+- Separate verified context from uncertain interpretation.
+- For a simple "why did this happen?" question, find the most likely specific explanation rather than listing generic possibilities.
+- Do not invent episode numbers, quotes, or facts.
+- Return a compact memo with: likely context, useful explanation, uncertainties, and a short list of the most useful source titles or URLs.
+- Do not dump long raw snippets.
+`;
+
+  const research = await callGroq({
+    model: GROQ_MODEL,
+    messages: [{ role: "user", content: researchPrompt }],
+    temperature: 0.1,
+    maxCompletionTokens: 2200,
+    browserSearch: true
+  });
+
+  return normalizeText(research, MAX_WEB_RESEARCH_CHARS);
+}
+
 app.post("/api/chat", rateLimit, async (req, res) => {
   try {
     if (!GROQ_API_KEY) {
@@ -307,11 +373,28 @@ app.post("/api/chat", rateLimit, async (req, res) => {
       visualContext = await analyzeImages(images, question);
     }
 
+    let webResearch = "";
+    const attemptedBrowserSearch = shouldUseBrowserSearch(question, images);
+
+    if (attemptedBrowserSearch) {
+      try {
+        webResearch = await researchOnline(question, visualContext);
+      } catch (searchError) {
+        // Web research is an enhancement, not a hard dependency. The chatbot
+        // should still answer from the image and its existing knowledge if the
+        // browser-search tool is temporarily unavailable.
+        console.warn("Browser search unavailable:", searchError.message);
+      }
+    }
+
     const enrichedUserText = [
       `Question de l'utilisateur :\n${question}`,
       textContext ? `\n\nContenu extrait des fichiers joints :\n${textContext}` : "",
       visualContext ? `\n\nAnalyse visuelle préparatoire des images jointes :\n${visualContext}` : "",
-      visualContext ? "\n\nRéponds maintenant directement à la question de l'utilisateur. Appuie-toi sur l'analyse visuelle. Pour une question simple du type pourquoi/what/why, réponds en prose concise : donne d'abord la meilleure interprétation de l'action visible et son explication. N'utilise pas de tableau et n'énumère pas une liste de motifs génériques. Si le référent exact reste ambigu, ajoute seulement une question de clarification courte à la fin." : ""
+      webResearch ? `\n\nNote de recherche web préparatoire :\n${webResearch}` : "",
+      visualContext || webResearch
+        ? "\n\nRéponds maintenant directement à la question de l'utilisateur. Donne d'abord l'explication la plus probable et utile en prose claire. Utilise la note web pour vérifier le contexte lorsqu'elle existe. N'utilise pas de tableau pour une question simple et n'énumère pas une liste de motifs génériques. Ne recopie pas les extraits bruts de navigation. Si une incertitude importante subsiste, indique-la brièvement puis pose au maximum une question de clarification ciblée."
+        : ""
     ].join("");
 
     const reply = await callGroq({
@@ -332,7 +415,8 @@ app.post("/api/chat", rateLimit, async (req, res) => {
     });
 
     return res.json({
-      reply: reply || "Je n'ai pas pu générer de réponse."
+      reply: reply || "Je n'ai pas pu générer de réponse.",
+      usedWebSearch: Boolean(webResearch)
     });
   } catch (error) {
     return res.status(error.status || 400).json({
