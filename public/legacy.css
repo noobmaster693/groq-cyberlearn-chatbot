@@ -83,11 +83,11 @@ button{cursor:pointer}
 .verify-btn{padding:8px 13px;border:0;border-radius:0;background:var(--accent);color:#fff;font-weight:700}
 .verify-btn:hover{background:var(--accent-dark)}
 
-/* One output area only: no question/output history boxes */
+/* One output area only: keep the answer available for copying without displaying it. */
 .program-output{margin:14px 0 0;padding:12px 18px 14px;border-top:14px solid var(--panel3);background:var(--success)}
 .program-output-title{margin-bottom:8px;color:var(--accent);font-size:20px;font-weight:700;letter-spacing:.2px}
-.copy-output{margin:0 0 9px;padding:6px 12px;border:1px solid var(--line);border-radius:0;background:linear-gradient(var(--panel),var(--panel3));font-weight:700}
-.program-output pre{margin:0;white-space:pre-wrap;font:14px/1.45 "Courier New",monospace;color:var(--text)}
+.copy-output{margin:0;padding:6px 12px;border:1px solid var(--line);border-radius:0;background:linear-gradient(var(--panel),var(--panel3));font-weight:700}
+.program-output pre,#programOutputText{display:none!important}
 
 .modal{position:fixed;inset:0;z-index:80;display:none;place-items:center;padding:16px;background:#0008}.modal.open{display:grid}
 .modal-box{width:min(850px,100%);max-height:88vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:0;background:var(--panel)}
