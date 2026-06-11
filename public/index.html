@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Assistant IA du cours</title>
-  <link rel="stylesheet" href="/legacy.css?v=16">
+  <link rel="stylesheet" href="/legacy.css?v=17">
 </head>
 <body>
   <main class="app">
@@ -84,6 +84,9 @@ print(answer)</textarea>
           <button class="copy-output" id="copyProgramOutput" type="button">COPIER</button>
           <pre id="programOutputText"></pre>
         </section>
+
+        <!-- Compatibility hook for the previous script; hidden from the interface. -->
+        <div class="hidden" id="pyHistory"></div>
       </section>
     </section>
 
@@ -105,7 +108,8 @@ print(answer)</textarea>
     </div>
   </div>
 
-  <script>localStorage.setItem('cy-mode-v5','python');</script>
-  <script src="/legacy.js?v=16"></script>
+  <script>localStorage.setItem('cy-mode-v4','python');</script>
+  <script src="/legacy.js?v=17"></script>
+  <script src="/legacy_patch_v17.js?v=17"></script>
 </body>
 </html>
