@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Assistant IA du cours</title>
-  <link rel="stylesheet" href="/legacy.css?v=13">
+  <link rel="stylesheet" href="/legacy.css?v=14">
 </head>
 <body>
   <main class="app">
     <div class="topbar">
+      <div class="brand" id="brand"></div>
       <div class="tabs">
         <button class="tab" id="optionsTab" type="button">Options ▾</button>
       </div>
@@ -87,6 +88,7 @@ print(answer)</textarea>
     </div>
   </div>
 
-  <script src="/legacy.js?v=13"></script>
+  <script>localStorage.setItem('cy-mode-v4','python');</script>
+  <script src="/legacy.js?v=14"></script>
 </body>
 </html>
