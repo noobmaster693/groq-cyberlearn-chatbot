@@ -4,29 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Assistant IA du cours</title>
-  <link rel="stylesheet" href="/legacy.css?v=15">
+  <link rel="stylesheet" href="/legacy.css?v=16">
 </head>
 <body>
   <main class="app">
     <div class="brand" id="brand"></div>
     <button class="tab floating-options" id="optionsTab" type="button">Options ▾</button>
 
-    <section class="main">
-      <aside class="drawer hidden" id="drawer">
-        <div class="drawer-title"><span>Options</span><button id="closeDrawer" type="button">×</button></div>
-        <div class="drawer-grid">
-          <button id="pythonTab" type="button">Python</button>
-          <button id="chatTab" type="button">Chat</button>
-          <select id="chatSelect"></select>
-          <button id="newChat" type="button">＋ Nouveau chat</button>
-          <button id="renameChat" type="button">✎ Renommer</button>
-          <button id="deleteChat" type="button">× Supprimer</button>
-          <button id="theme" type="button">◐ Thème</button>
-          <button class="wide" id="textSettings" type="button">Textes visibles…</button>
-        </div>
-      </aside>
+    <aside class="drawer hidden" id="drawer">
+      <div class="drawer-title"><span>Options</span><button id="closeDrawer" type="button">×</button></div>
+      <div class="drawer-grid">
+        <button id="pythonTab" type="button">Python</button>
+        <button id="chatTab" type="button">Chat</button>
+        <select id="chatSelect"></select>
+        <button id="newChat" type="button">＋ Nouveau chat</button>
+        <button id="renameChat" type="button">✎ Renommer</button>
+        <button id="deleteChat" type="button">× Supprimer</button>
+        <button id="theme" type="button">◐ Thème</button>
+        <button class="wide" id="textSettings" type="button">Textes visibles…</button>
+      </div>
+    </aside>
 
-      <section class="view" id="chatView"><div class="chat-log" id="chatLog"></div></section>
+    <section class="main">
+      <section class="view hidden" id="chatView">
+        <div class="chat-log" id="chatLog"></div>
+      </section>
 
       <section class="view coderunner-workspace hidden" id="pythonView">
         <div class="coderunner-info">
@@ -54,8 +56,34 @@ answer = ask_course_assistant(question)
 print(answer)</textarea>
         </div>
 
-        <div class="runrow"><button class="legacy-btn" id="runPython" type="button">EXÉCUTER</button></div>
-        <div class="py-history" id="pyHistory"></div>
+        <section class="upload coderunner-upload">
+          <div class="upload-limit">Taille maximale des nouveaux fichiers : 10 Ko</div>
+          <div class="upload-toolbar">
+            <div class="upload-title">
+              <button type="button" class="upload-square" id="browse">＋</button>
+              <span class="folder-icon">■</span><span id="fileTitle">Fichiers</span>
+            </div>
+            <div class="upload-view-buttons" aria-hidden="true">
+              <button type="button" tabindex="-1">▦</button>
+              <button type="button" tabindex="-1">☷</button>
+              <button type="button" tabindex="-1">◱</button>
+            </div>
+          </div>
+          <div class="drop" id="drop" tabindex="0">
+            <div><div class="drop-circle">⬇</div><span id="dropText">Vous pouvez glisser des fichiers ici pour les ajouter.</span></div>
+          </div>
+          <div class="chips" id="chips"></div>
+          <div class="status" id="status"></div>
+          <input id="fileInput" hidden multiple type="file" accept="image/*,application/pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.ino,.c,.cpp,.h,.java">
+        </section>
+
+        <div class="verify-row"><button class="verify-btn" id="runPython" type="button">VÉRIFIER</button></div>
+
+        <section class="program-output hidden" id="programOutput">
+          <div class="program-output-title">SORTIE DU PROGRAMME :</div>
+          <button class="copy-output" id="copyProgramOutput" type="button">COPIER</button>
+          <pre id="programOutputText"></pre>
+        </section>
       </section>
     </section>
 
@@ -63,13 +91,6 @@ print(answer)</textarea>
       <textarea id="question" placeholder="Écris ta question ici..."></textarea>
       <button class="legacy-btn" id="send" type="submit">Envoyer</button>
     </form>
-
-    <section class="upload">
-      <div class="upload-title"><button type="button" class="legacy-btn" id="browse">＋</button><span id="fileTitle">Fichiers</span></div>
-      <div class="drop" id="drop" tabindex="0"><div><div class="drop-arrow">⬇</div><span id="dropText">Vous pouvez glisser des fichiers ici pour les ajouter.</span></div></div>
-      <div class="chips" id="chips"></div><div class="status" id="status"></div>
-      <input id="fileInput" hidden multiple type="file" accept="image/*,application/pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.ino,.c,.cpp,.h,.java">
-    </section>
   </main>
 
   <div class="modal" id="settingsModal">
@@ -84,7 +105,7 @@ print(answer)</textarea>
     </div>
   </div>
 
-  <script>localStorage.setItem('cy-mode-v4','python');</script>
-  <script src="/legacy.js?v=15"></script>
+  <script>localStorage.setItem('cy-mode-v5','python');</script>
+  <script src="/legacy.js?v=16"></script>
 </body>
 </html>
