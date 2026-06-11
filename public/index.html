@@ -4,15 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Assistant IA du cours</title>
-  <link rel="stylesheet" href="/legacy.css?v=11">
+  <link rel="stylesheet" href="/legacy.css?v=13">
 </head>
 <body>
   <main class="app">
     <div class="topbar">
-      <div class="brand" id="brand"></div>
       <div class="tabs">
-        <button class="tab" id="chatTab" type="button">Chat</button>
-        <button class="tab" id="pythonTab" type="button">Python</button>
         <button class="tab" id="optionsTab" type="button">Options ▾</button>
       </div>
     </div>
@@ -21,6 +18,8 @@
       <aside class="drawer hidden" id="drawer">
         <div class="drawer-title"><span>Options</span><button id="closeDrawer" type="button">×</button></div>
         <div class="drawer-grid">
+          <button id="pythonTab" type="button">Python</button>
+          <button id="chatTab" type="button">Chat</button>
           <select id="chatSelect"></select>
           <button id="newChat" type="button">＋ Nouveau chat</button>
           <button id="renameChat" type="button">✎ Renommer</button>
@@ -88,6 +87,6 @@ print(answer)</textarea>
     </div>
   </div>
 
-  <script src="/legacy.js?v=11"></script>
+  <script src="/legacy.js?v=13"></script>
 </body>
 </html>
