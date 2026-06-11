@@ -4,86 +4,73 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Assistant IA du cours</title>
-  <link rel="stylesheet" href="/legacy.css?v=10">
-
+  <link rel="stylesheet" href="/legacy.css?v=11">
 </head>
 <body>
   <main class="app">
     <div class="topbar">
       <div class="brand" id="brand"></div>
       <div class="tabs">
-        <button class="tab" id="chatTab">Chat</button>
-        <button class="tab" id="pythonTab">Python</button>
-        <button class="tab" id="optionsTab">Options ▾</button>
+        <button class="tab" id="chatTab" type="button">Chat</button>
+        <button class="tab" id="pythonTab" type="button">Python</button>
+        <button class="tab" id="optionsTab" type="button">Options ▾</button>
       </div>
     </div>
 
     <section class="main">
       <aside class="drawer hidden" id="drawer">
-        <div class="drawer-title"><span>Options</span><button id="closeDrawer">×</button></div>
+        <div class="drawer-title"><span>Options</span><button id="closeDrawer" type="button">×</button></div>
         <div class="drawer-grid">
           <select id="chatSelect"></select>
-          <button id="newChat">＋ Nouveau chat</button>
-          <button id="renameChat">✎ Renommer</button>
-          <button id="deleteChat">× Supprimer</button>
-          <button id="theme">◐ Thème</button>
-          <button class="wide" id="textSettings">Textes visibles…</button>
+          <button id="newChat" type="button">＋ Nouveau chat</button>
+          <button id="renameChat" type="button">✎ Renommer</button>
+          <button id="deleteChat" type="button">× Supprimer</button>
+          <button id="theme" type="button">◐ Thème</button>
+          <button class="wide" id="textSettings" type="button">Textes visibles…</button>
         </div>
       </aside>
 
-      <section class="view" id="chatView">
-        <div class="chat-log" id="chatLog"></div>
-      </section>
+      <section class="view" id="chatView"><div class="chat-log" id="chatLog"></div></section>
 
-      <section class="view legacy-workspace hidden" id="pythonView">
-        <div class="legacy-form">
-          <input class="legacy-input span2" id="pyQuestion" placeholder="text box">
-          <input class="legacy-input span2" id="pyContext" placeholder="text box">
-          <input class="legacy-input left" data-manual="0" placeholder="text box">
-          <input class="legacy-input right" data-manual="1" placeholder="text box">
-          <input class="legacy-input left small" data-manual="2" placeholder="text box">
-          <div></div>
-          <input class="legacy-input left" data-manual="3" placeholder="text box">
-          <input class="legacy-input right" data-manual="4" placeholder="text box">
-          <input class="legacy-input left" data-manual="5" placeholder="text box">
-          <input class="legacy-input right" data-manual="6" placeholder="text box">
-          <input class="legacy-input left" data-manual="7" placeholder="text box">
-          <input class="legacy-input right" data-manual="8" placeholder="text box">
-          <input class="legacy-input left" data-manual="9" placeholder="text box">
-          <input class="legacy-input right" data-manual="10" placeholder="text box">
-          <input class="legacy-input left" data-manual="11" placeholder="text box">
-          <input class="legacy-input right" data-manual="12" placeholder="text box">
-          <input class="legacy-input left small" data-manual="13" placeholder="text box">
-          <div></div>
-          <input class="legacy-input left medium" data-manual="14" placeholder="text box">
+      <section class="view coderunner-workspace hidden" id="pythonView">
+        <div class="coderunner-info">
+          <p>Cette question CodeRunner vous permet de tester librement du code pendant l’épreuve.<br>Vous pouvez, par exemple, vérifier le comportement d’une commande Python ou explorer les fonctions d’un module.</p>
+          <p><strong>Important :</strong> si votre code nécessite la lecture d’un fichier de données, déposez ce fichier dans la zone prévue à cet effet avant d’exécuter votre code.</p>
+          <p><strong>Commandes utiles :</strong></p>
+          <pre>help(print)        # Affiche l’aide sur la fonction print
+dir(math)          # Liste les fonctions disponibles dans le module math (ne pas oublier import math)
+help(math.sqrt)    # Affiche l’aide sur la fonction sqrt du module math (ne pas oublier import math)
+print(type(a))     # Affiche le type de la variable a
+dir(objet)         # Liste les attributs et méthodes d’un objet
+type(objet)        # Donne le type d’un objet</pre>
+          <p class="response-title"><strong>Réponse :</strong></p>
+          <button class="reset-response" id="resetResponse" type="button">RÉINITIALISER LA RÉPONSE</button>
         </div>
 
-        <div class="editor">
+        <div class="editor coderunner-editor">
           <div class="gutter">1
 2
 3
 4</div>
-          <textarea id="pyEditor" spellcheck="false">question = ""
-context = ""
-answer = ask_course_assistant(question, context)
+          <textarea id="pyEditor" spellcheck="false"># Entrer votre question ici
+question = ""
+answer = ask_course_assistant(question)
 print(answer)</textarea>
         </div>
-        <div class="runrow">
-          <button class="legacy-btn" id="clearPython">Clear</button>
-          <button class="legacy-btn" id="runPython">Run</button>
-        </div>
+
+        <div class="runrow"><button class="legacy-btn" id="runPython" type="button">EXÉCUTER</button></div>
         <div class="py-history" id="pyHistory"></div>
       </section>
     </section>
 
-    <form id="chatForm" class="composer">
+    <form id="chatForm" class="composer hidden">
       <textarea id="question" placeholder="Écris ta question ici..."></textarea>
       <button class="legacy-btn" id="send" type="submit">Envoyer</button>
     </form>
 
     <section class="upload">
       <div class="upload-title"><button type="button" class="legacy-btn" id="browse">＋</button><span id="fileTitle">Fichiers</span></div>
-      <div class="drop" id="drop" tabindex="0"><div><div class="drop-arrow">⬇</div><span id="dropText">Tu peux glisser des fichiers ici pour les ajouter.</span></div></div>
+      <div class="drop" id="drop" tabindex="0"><div><div class="drop-arrow">⬇</div><span id="dropText">Vous pouvez glisser des fichiers ici pour les ajouter.</span></div></div>
       <div class="chips" id="chips"></div><div class="status" id="status"></div>
       <input id="fileInput" hidden multiple type="file" accept="image/*,application/pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.xml,.ino,.c,.cpp,.h,.java">
     </section>
@@ -101,7 +88,6 @@ print(answer)</textarea>
     </div>
   </div>
 
-  <script src="/legacy.js?v=10"></script>
-
+  <script src="/legacy.js?v=11"></script>
 </body>
 </html>
